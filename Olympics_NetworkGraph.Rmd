@@ -1,0 +1,266 @@
+---
+title: "Network Graph"
+author: "Elizabeth Nieto"
+date: "November 20, 2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#REFERENCES :
+https://www.jessesadler.com/post/network-analysis-with-r/
+https://www.rmanchester.org/wp-content/uploads/sites/3/presentations/ManchesterR_-_Network_Visualisation_with_ggraph_-_Hannah_Frick_-_20180206.pdf
+https://www.data-imaginist.com/2017/announcing-ggraph/
+http://mr.schochastics.net/netVizR.html
+https://cran.r-project.org/web/packages/ggraph/ggraph.pdf
+
+#REFERENCES FOR FUTURE WORK w/ different network packages in R 
+https://briatte.github.io/ggnet/
+```{r}
+
+library(tidygraph)
+library(ggraph)
+library(tidyr)
+library(plyr)
+library(visNetwork)
+library(networkD3)
+
+
+#set working directory
+setwd("C:\\Users\\eniet\\Documents\\School\\Autumn19\\DSC465_Data_Visualization\\Project")
+
+getwd()
+```
+#GET data
+#GET sport data
+#GET medal count data
+```{r}
+
+data <-read.csv("olympics.csv")
+head(data,15)
+
+#cast(data,ID ~ Event)
+#filter out athletes w/o medals
+winners <- data[!is.na(data$Medal),]
+#filter out all sports except Alpine Skiing
+alpine_winners <- filter (winners, Sport == 'Alpine Skiing')
+#filterout any case that was played before 1988 bc this is when all events started
+alpine_winners_1988_2016 <- filter(alpine_winners, Year > 1987)
+#select data set with only ID and events
+id_events <- select(alpine_winners_1988_2016 ,ID,Year,Medal,Event)
+#241 Rows
+#this data sets has one row contianing id and event per athlete who won in alpine skiing
+id_events
+#filter out athletes who only won one medal
+athleteIDs <- select(id_events, ID)
+ath_freq <- athleteIDs %>% 
+  count('ID')
+multiple_wins <- filter(ath_freq, freq != '1')
+#filter to only get unique events per id
+#id_events %>%
+#  distinct() 
+#join athletes w/ multiple wins to all athletes
+multiplewins <- join(multiple_wins,id_events, by = 'ID', type = 'inner')
+#convert event values to numeric ids of alpine tibble evetn ids
+#ABANDONED - replace(multiplewins$Event, multiplewins$Event == 'Alpine Skiing Men\'s Downhill', 1)
+
+#pivot dataset to get each event to become a column containing a medal value
+piv_event <- multiplewins %>%
+  spread(Event, Medal)
+
+#convert event values to numeric ids of alpine tibble evetn ids
+renamed_events <- rename(piv_event, c("Alpine Skiing Men\'s Downhill" = '1', 
+                    "Alpine Skiing Men's Super G" = '2',
+                    "Alpine Skiing Men's Giant Slalom" = '3',
+                    "Alpine Skiing Men's Slalom" = '4',
+                    "Alpine Skiing Men's Combined" = '5',
+                    "Alpine Skiing Women's Slalom" = '6',
+                    "Alpine Skiing Women's Giant Slalom" = '7',
+                    "Alpine Skiing Women's Super G" = '8',
+                    "Alpine Skiing Women's Combined" = '9',
+                    "Alpine Skiing Women's Downhill" = '10'
+                    ))
+
+```
+
+
+#GET event data in tibble format
+```{r}
+#MENS EVENTS
+#athletes who won in sport 1 and 2
+events_1_2 <-filter(renamed_events,!((is.na(`1`)| is.na(`2`))))
+line_1_2 <- nrow(events_1_2)
+
+#athletes who won in sport 1 and 3
+events_1_3 <- filter(renamed_events,!((is.na(`1`)| is.na(`3`))))
+line_1_3 <- nrow(events_1_3)
+
+#athletes who won in sport 1 and 4
+events_1_4 <- filter(renamed_events,!((is.na(`1`)| is.na(`4`))))
+line_1_4 <- nrow(events_1_4)
+
+#athletes who won in sport 1 and 5
+events_1_5 <- filter(renamed_events,!((is.na(`1`)| is.na(`5`))))
+line_1_5 <- nrow(events_1_5)
+
+#athletes who won in sport 2 and 3
+events_2_3 <- filter(renamed_events, !((is.na(`2`)| is.na(`3`))))
+line_2_3 <- nrow(events_2_3)
+
+#athletes who won in sport 2 and 4
+events_2_4 <- filter(renamed_events,!((is.na(`2`)| is.na(`4`))))
+line_2_4 <- nrow(events_2_4)
+
+#athletes who won in sport 2 and 5
+events_2_5 <- filter(renamed_events,!((is.na(`2`)| is.na(`5`))))
+line_2_5 <- nrow(events_2_5)
+
+#athletes who won in sport 3 and 4
+events_3_4 <- filter(renamed_events,!((is.na(`3`)| is.na(`4`))))
+line_3_4 <- nrow(events_3_4)
+
+#athletes who won in sport 3 and 5
+events_3_5 <- filter(renamed_events,!((is.na(`3`)| is.na(`5`))))
+line_3_5 <- nrow(events_3_5)
+
+#athletes who won in sport 4 and 5
+events_4_5 <- filter(renamed_events,!((is.na(`4`)| is.na(`5`))))
+line_4_5 <- nrow(events_4_5)
+
+
+#WOMENS EVENTS
+#athletes who won in sport 6 and 7
+events_6_7 <-filter(renamed_events,!((is.na(`6`)| is.na(`7`))))
+line_6_7 <- nrow(events_6_7)
+
+#athletes who won in sport 6 and 8
+events_6_8 <- filter(renamed_events,!((is.na(`6`)| is.na(`8`))))
+line_6_8 <- nrow(events_6_8)
+
+#athletes who won in sport 6 and 9
+events_6_9 <- filter(renamed_events,!((is.na(`6`)| is.na(`9`))))
+line_6_9 <- nrow(events_6_9)
+
+#athletes who won in sport 6 and 10
+events_6_10 <- filter(renamed_events,!((is.na(`6`)| is.na(`10`))))
+line_6_10 <- nrow(events_6_10)
+
+#athletes who won in sport 7 and 8
+events_7_8 <- filter(renamed_events,!((is.na(`7`)| is.na(`8`))))
+line_7_8 <- nrow(events_7_8)
+
+#athletes who won in sport 7 and 9
+events_7_9 <- filter(renamed_events,!((is.na(`7`)| is.na(`9`))))
+line_7_9 <- nrow(events_7_9)
+
+#athletes who won in sport 7 and 10
+events_7_10 <- filter(renamed_events,!((is.na(`7`)| is.na(`10`))))
+line_7_10 <- nrow(events_7_10)
+
+#athletes who won in sport 8 and 9
+events_8_9 <- filter(renamed_events,!((is.na(`8`)| is.na(`9`))))
+line_8_9 <-nrow(events_8_9)
+
+#athletes who won in sport 8 and 10
+events_8_10 <- filter(renamed_events,!((is.na(`8`)| is.na(`10`))))
+line_8_9 <- nrow(events_8_10)
+
+#athletes who won in sport 9 and 10
+events_9_10 <- filter(renamed_events,!((is.na(`9`)| is.na(`10`))))
+line_9_10<- nrow(events_9_10)
+
+#backup filter(renamed_events,`1` == 'Gold')
+```
+
+#CREATE NEW DF for events
+```{r}
+from <- c(1,1,1,2,2,3,3,4,6,6,6,6,7,7,7,8,8,9)
+to <- c(2,3,5,3,5,4,5,5,7,8,9,10,8,9,10,9,10,10)
+weight <- c(7,4,4,7,3,3,2,3,6,1,7,1,4,5,3,4,4,5)
+
+length(weight)
+ec_df <- data.frame(from, to, weight)
+names(ec_df) <- c('from', 'to', 'weight')
+
+
+#event_counts <- rbind(event_counts, c(1,2,7), c(1,3,4), c(1,4,0), c(1,5, 4 ), c(2,3,7 ),  c(2,4, 0), c(2,5,3), c(3,4,3), c(3,5,2), c(4,5,3), c(6,7,6), c(6,8,1), c(6,9,7), c(6,10,1), c(7,8,4), c(7,9,5), c(7,10,3), c(8,9,4), #c(8,10,4), c(9,10,5) )
+```
+#TEST TO COMBINE NETWORKS - Create a new link list to merge event ids to only include 1-5 and add a gender column
+```{r}
+from <- c(1,1,1,2,2,3,3,4,1,1,1,1,2,2,2,3,3,4)
+to <- c(2,3,5,3,5,4,5,5,2,3,4,5,3,4,5,4,5,5)
+weight <- c(7,4,4,7,3,3,2,3,6,1,7,1,4,5,3,4,4,5)
+gender <- c('m', 'm', 'm', 'm', 'm','m','m','m', 'f', 'f', 'f', 'f', 'f','f','f','f','f','f')
+
+ec_df2 <- data.frame(from, to, weight, gender)
+names(ec_df2) <- c('from', 'to', 'weight','gender')
+```
+
+
+#GET node data - alpine events
+```{r}
+events <- select(data, Event)
+alpine <- filter (data, Sport == 'Alpine Skiing')
+alpineevents <- unique(alpine$Event)
+alpineevents
+```
+#TEST TO COMBINE NETWORKS - 
+```{r}
+fiveevents <- c('Downhill', 'Super G', 'Giant Slalom', 'Slalom','Combined' )
+fiveevent_ids <- c(1,2,3,4,5)
+
+ec_df2 <- data.frame(fiveevent_ids,fiveevents)
+names(ec_df2) <- c('ID', 'event')
+```
+
+#GET event tibble 
+#add ID column 
+#change value col name to event
+```{r}
+alpineevents <- as_tibble(alpineevents)
+alpineevents <- tibble::rowid_to_column(alpineevents,'ID')
+#alpineevents <- alpineevents%>% 
+#  rename('Event' = value )
+alpineevents
+class(alpineevents)
+```
+#GET event count tibble
+```{r}
+event_counts_tibble <- as_tibble(ec_df)
+
+#event_counts_tibble <- plyr::rename(event_counts_tibble, c('Node1' = 'from', 'Node2' = 'to', 'Freq' = 'weight'))
+
+```
+#CREATE tidygraph
+```{r}
+events_tidy <- tbl_graph(nodes = alpineevents, edges = event_counts_tibble, directed = TRUE)
+
+class(events_tidy)
+```
+
+#CREATE nETWORK GRAPH
+```{r}
+library (ggrepel)
+
+ggraph(events_tidy, layout = "auto") +
+  geom_node_point(color = 'blue') +
+  geom_node_label(aes(label = value), color = 'blue', repel = TRUE)+
+  
+  geom_edge_link(aes(width = weight), alpha = .08) +
+  
+  scale_edge_width(range =c(0.2,2)) +
+  labs(edge_width = 'Wins in Both') +
+  theme_graph(background = 'white') +
+  ggtitle('Alpine Skiing')
+
+
+```
+#CREATE INTERACTIVE Network Graph
+```{r}
+
+net<- visNetwork(alpineevents, ec_df)
+plot(net)
+
